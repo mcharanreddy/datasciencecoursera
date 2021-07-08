@@ -20,30 +20,30 @@ features <- read.table("./features.txt")
 # read activity labels 
 activity_labels <- read.table("./activity_labels.txt") 
 
-# merge of training and test sets
-x_total   <- rbind(x_train, x_test)
-y_total   <- rbind(y_train, y_test) 
-sub_total <- rbind(sub_train, sub_test) 
-
-# keep only measurements for mean and standard deviation 
-sel_features <- variable_names[grep(".*mean\\(\\)|std\\(\\)", features[,2], ignore.case = FALSE),]
-x_total      <- x_total[,sel_features[,1]]
-
-# name columns
-colnames(x_total)   <- sel_features[,2]
-colnames(y_total)   <- "activity"
-colnames(sub_total) <- "subject"
-
-# merge final dataset
-total <- cbind(sub_total, y_total, x_total)
-
-# turn activities & subjects into factors 
-total$activity <- factor(total$activity, levels = activity_labels[,1], labels = activity_labels[,2]) 
-total$subject  <- as.factor(total$subject) 
-
-# create a summary independent tidy dataset from final dataset 
-# with the average of each variable for each activity and each subject. 
-total_mean <- total %>% group_by(activity, subject) %>% summarize_all(funs(mean)) 
-
-# export summary dataset
-write.table(total_mean, file = "./tidydata.txt", row.names = FALSE, col.names = TRUE) 
+#Create Sanity and Column Values to the Train Data
+colnames(xtrain) = features[,2]
+colnames(ytrain) = "activityId"
+colnames(subject_train) = "subjectId"
+#Create Sanity and column values to the test data
+colnames(xtest) = features[,2]
+colnames(ytest) = "activityId"
+colnames(subject_test) = "subjectId"
+#Create sanity check for the activity labels value
+colnames(activityLabels) <- c('activityId','activityType')
+#Merging the train and test data - important outcome of the project
+mrg_train = cbind(ytrain, subject_train, xtrain)
+mrg_test = cbind(ytest, subject_test, xtest)
+#Create the main data table merging both table tables - this is the outcome of 1
+setAllInOne = rbind(mrg_train, mrg_test)
+# Need step is to read all the values that are available
+colNames = colnames(setAllInOne)
+#Need to get a subset of all the mean and standards and the correspondongin activityID and subjectID 
+mean_and_std = (grepl("activityId" , colNames) | grepl("subjectId" , colNames) | grepl("mean.." , colNames) | grepl("std.." , colNames))
+#A subtset has to be created to get the required dataset
+setForMeanAndStd <- setAllInOne[ , mean_and_std == TRUE]
+setWithActivityNames = merge(setForMeanAndStd, activityLabels, by='activityId', all.x=TRUE)
+# New tidy set has to be created 
+secTidySet <- aggregate(. ~subjectId + activityId, setWithActivityNames, mean)
+secTidySet <- secTidySet[order(secTidySet$subjectId, secTidySet$activityId),]
+#The last step is to write the ouput to a text file 
+write.table(secTidySet, "secTidySet.txt", row.name=FALSE)
